@@ -927,15 +927,42 @@ for (const [key, values] of Object.entries(EXTRA_I18N)) {
   I18N["en-US"][key] = values["en-US"];
 }
 
-// Guarantee onboarding action keys exist at runtime (the zh-CN reassignment
-// block above does not carry them; without this t() returns the raw key).
+// Guarantee ALL onboarding keys exist at runtime in BOTH languages. The
+// zh-CN pack is fully reassigned above and only carries step1-3, so without
+// this block the AddFile/Settings/Help steps fall back to raw English-looking
+// keys — producing a mixed zh/en tour. Keeping the full set here in one place
+// makes the tour language-consistent regardless of the reassignment mess.
 Object.assign(I18N["zh-CN"], {
+  "onboarding.step1Title": "欢迎使用智能文件复习系统",
+  "onboarding.step1Body": "它不会移动你的资料，只会索引本地文件，并按记忆曲线提醒你复习。",
+  "onboarding.step2Title": "选择一个本地文件库",
+  "onboarding.step2Body": "从你的 PDF、笔记、图片、视频文件夹开始。扫描后就能浏览、搜索和批量管理。",
+  "onboarding.stepAddFileTitle": "也可以添加单个文件",
+  "onboarding.stepAddFileBody": "不必先建文件库，直接添加某一个 PDF、文档、图片或视频也行。",
+  "onboarding.step3Title": "每天从“开始复习”进入",
+  "onboarding.step3Body": "阅读资料后选择忘记、困难、良好或简单，系统会自动安排下一次复习。",
+  "onboarding.stepSettingsTitle": "在设置里个性化",
+  "onboarding.stepSettingsBody": "调整复习算法、目标记忆率、每日上限、提醒时间、语言、主题与强调色。",
+  "onboarding.stepHelpTitle": "随时可在帮助里重开本引导",
+  "onboarding.stepHelpBody": "点左侧“帮助”，随时重看快速入门，并重新开启新用户引导。",
   "actions.skipTour": "跳过引导",
   "actions.restartTour": "重新开始引导",
   "actions.finish": "完成",
   "help.restartTour": "开启新用户引导",
 });
 Object.assign(I18N["en-US"], {
+  "onboarding.step1Title": "Welcome to File Review",
+  "onboarding.step1Body": "It never moves your files. It indexes local files and reminds you to review them with a memory schedule.",
+  "onboarding.step2Title": "Choose a local library",
+  "onboarding.step2Body": "Start with a folder of PDFs, notes, images, or videos. After scanning, you can browse, search, and batch manage everything.",
+  "onboarding.stepAddFileTitle": "Or add a single file",
+  "onboarding.stepAddFileBody": "You don't need a library first. Add one PDF, document, image, or video directly.",
+  "onboarding.step3Title": "Use Start Review each day",
+  "onboarding.step3Body": "After reading, rate the item as Again, Hard, Good, or Easy. The app schedules the next review automatically.",
+  "onboarding.stepSettingsTitle": "Personalize in Settings",
+  "onboarding.stepSettingsBody": "Tune the review algorithm, target retention, daily limit, reminder time, language, theme, and accent color.",
+  "onboarding.stepHelpTitle": "Reopen this tour anytime from Help",
+  "onboarding.stepHelpBody": "Open “Help” on the left to reread the quick start and restart the new-user tour.",
   "actions.skipTour": "Skip tour",
   "actions.restartTour": "Restart tour",
   "actions.finish": "Finish",
@@ -961,7 +988,15 @@ function applyI18n() {
     node.setAttribute("placeholder", t(node.dataset.i18nPlaceholder));
   });
   document.title = state.lang === "en-US" ? "File Review 2.14.0" : "智能文件复习系统 2.14.0";
-  updateOnboardingButtons();
+  // If the tour is currently open, re-render its content so a mid-tour language
+  // switch (the tour's Settings step exposes the language toggle) updates the
+  // whole card, not just the buttons.
+  const ob = $("#onboarding");
+  if (ob && !ob.classList.contains("hidden")) {
+    renderOnboardingStep();
+  } else {
+    updateOnboardingButtons();
+  }
 }
 
 function pad(num) {
@@ -2625,9 +2660,11 @@ function startOnboarding() {
 }
 
 function showOnboardingIfNeeded() {
+  // Default ON: show the tour for any first-time user (regardless of whether a
+  // library already exists). Once the user finishes or skips it, the localStorage
+  // flag is set and it won't auto-open again.
   const seen = localStorage.getItem("fileReviewerOnboardingDone") === "1";
-  const hasLibrary = (state.libraries || []).length > 0;
-  if (!seen && !hasLibrary) startOnboarding();
+  if (!seen) startOnboarding();
 }
 
 function closeOnboarding() {
