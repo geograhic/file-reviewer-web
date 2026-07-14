@@ -20,6 +20,7 @@ node_modules/
 source_backups/
 .DS_Store
 Thumbs.db
+*.baiduyun.uploading.cfg
 
 # ===== 私有 agent 记忆（不公开） =====
 .workbuddy/
