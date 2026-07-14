@@ -3104,6 +3104,10 @@ async function init() {
   if (window.LocalAPI && typeof window.LocalAPI.install === "function") {
     window.LocalAPI.install();
   }
+  // Open IndexedDB connection — required before any DB operation (loadOverview,
+  // loadItems, etc.). Without this, _db stays null and every DB call throws
+  // "Cannot read properties of null (reading 'transaction')".
+  try { await DB.init(); } catch (e) { console.warn("[init] DB.init() failed:", e); }
   bindEvents();
   requestNotificationsIfNeeded();
   setupReminderLoop();

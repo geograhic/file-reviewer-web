@@ -20,6 +20,7 @@
   ];
 
   let _db = null;
+  let _dbReady = null; // Promise that resolves when _db is set (singleton)
   let _mem = null; // { store: Map }
 
   function clone(obj) {
@@ -66,6 +67,9 @@
   }
 
   function tx(store, mode) {
+    if (idb && !_db) {
+      throw new Error("DB.tx() called before DB.init(). _db is null — did you await DB.init() first?");
+    }
     const t = _db.transaction(store, mode);
     return t.objectStore(store);
   }
