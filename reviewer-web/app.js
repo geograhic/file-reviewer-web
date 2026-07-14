@@ -3131,17 +3131,26 @@ async function init() {
   bindEvents();
   requestNotificationsIfNeeded();
   setupReminderLoop();
-  await loadOverview();
-  await loadPlugins();
-  await loadItems();
-  await loadNotes();
-  setView("dashboard");
+  // Data loading may fail (e.g. IndexedDB unavailable in restricted contexts),
+  // but the onboarding tour is a pure UI overlay that should show regardless.
+  // So we show onboarding FIRST, then attempt data loading separately.
   showOnboardingIfNeeded();
+  try {
+    await loadOverview();
+    await loadPlugins();
+    await loadItems();
+    await loadNotes();
+  } catch (e) {
+    console.warn("[init] data loading error (non-fatal):", e);
+  }
+  setView("dashboard");
   setInterval(loadOverview, 60000);
 }
 
 init().catch((error) => {
   reportError(error);
+  // Last-resort: ensure onboarding still shows even if init crashed hard.
+  try { showOnboardingIfNeeded(); } catch (_) {}
 });
 
 window.addEventListener("unhandledrejection", (event) => {
