@@ -2657,9 +2657,22 @@ function startOnboarding() {
   try {
     state.onboardingStep = 0;
     const ob = $("#onboarding");
-    if (ob) ob.classList.remove("hidden");
+    if (!ob) { console.warn("[onboarding] #onboarding element not found"); return; }
+    ob.classList.remove("hidden");
     renderOnboardingStep();
-  } catch (e) { console.warn("[onboarding] startOnboarding error:", e); }
+    // Verify the tour is actually visible after rendering
+    requestAnimationFrame(() => {
+      const overlay = $("#onboardingOverlay");
+      if (overlay && !ob.classList.contains("hidden")) {
+        // Add a brief pulse animation to draw attention
+        ob.style.animation = "none";
+        /* force reflow */ ob.offsetHeight;
+        ob.style.animation = "";
+      }
+    });
+  } catch (e) {
+    console.error("[onboarding] startOnboarding error:", e);
+  }
 }
 
 function showOnboardingIfNeeded() {
@@ -2668,8 +2681,15 @@ function showOnboardingIfNeeded() {
     // library already exists). Once the user finishes or skips it, the localStorage
     // flag is set and it won't auto-open again.
     const seen = localStorage.getItem("fileReviewerOnboardingDone") === "1";
-    if (!seen) startOnboarding();
-  } catch (e) { console.warn("[onboarding] showOnboardingIfNeeded error:", e); }
+    if (!seen) {
+      // Defer to next paint cycle so the dashboard has fully rendered first.
+      // Without this deferral, some browsers may not display the overlay correctly
+      // when triggered synchronously at the end of an async init chain.
+      requestAnimationFrame(() => { startOnboarding(); });
+    }
+  } catch (e) {
+    console.error("[onboarding] showOnboardingIfNeeded error:", e);
+  }
 }
 
 function closeOnboarding() {
