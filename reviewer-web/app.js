@@ -2654,17 +2654,22 @@ const ONBOARDING_STEPS = [
 ];
 
 function startOnboarding() {
-  state.onboardingStep = 0;
-  $("#onboarding").classList.remove("hidden");
-  renderOnboardingStep();
+  try {
+    state.onboardingStep = 0;
+    const ob = $("#onboarding");
+    if (ob) ob.classList.remove("hidden");
+    renderOnboardingStep();
+  } catch (e) { console.warn("[onboarding] startOnboarding error:", e); }
 }
 
 function showOnboardingIfNeeded() {
-  // Default ON: show the tour for any first-time user (regardless of whether a
-  // library already exists). Once the user finishes or skips it, the localStorage
-  // flag is set and it won't auto-open again.
-  const seen = localStorage.getItem("fileReviewerOnboardingDone") === "1";
-  if (!seen) startOnboarding();
+  try {
+    // Default ON: show the tour for any first-time user (regardless of whether a
+    // library already exists). Once the user finishes or skips it, the localStorage
+    // flag is set and it won't auto-open again.
+    const seen = localStorage.getItem("fileReviewerOnboardingDone") === "1";
+    if (!seen) startOnboarding();
+  } catch (e) { console.warn("[onboarding] showOnboardingIfNeeded error:", e); }
 }
 
 function closeOnboarding() {
@@ -2805,6 +2810,8 @@ function setupLibraryResizer() {
 }
 
 function bindEvents() {
+  // Defensive helper: skips binding if element missing instead of crashing.
+  function $bind(sel, ev, fn) { const el = $("#"+sel); if (el) el.addEventListener(ev, fn); }
   document.addEventListener("click", async (event) => {
     try {
       const nav = event.target.closest("[data-view]");
@@ -2930,70 +2937,70 @@ function bindEvents() {
     }
   });
 
-  $("#chooseLibraryBtn").addEventListener("click", chooseLibrary);
-  $("#chooseLibraryBtn2").addEventListener("click", chooseLibrary);
-  $("#chooseFileBtn").addEventListener("click", chooseFile);
-  $("#chooseFileBtn2").addEventListener("click", chooseFile);
-  $("#newDeckBtn").addEventListener("click", createDeck);
-  $("#clearDeckFilterBtn").addEventListener("click", async () => {
+  $bind("chooseLibraryBtn","click", chooseLibrary);
+  $bind("chooseLibraryBtn2","click", chooseLibrary);
+  $bind("chooseFileBtn","click", chooseFile);
+  $bind("chooseFileBtn2","click", chooseFile);
+  $bind("newDeckBtn","click", createDeck);
+  $bind("clearDeckFilterBtn","click", async () => {
     state.filters.deckId = "";
     renderDecks();
     await loadItems();
   });
-  $("#manualLibraryForm").addEventListener("submit", async (event) => {
+  $bind("manualLibraryForm","submit", async (event) => {
     event.preventDefault();
     await addLibraryPath($("#manualLibraryPath").value);
   });
-  $("#scanAllBtn").addEventListener("click", scanAll);
-  $("#startDueBtn").addEventListener("click", () => startReview());
-  $("#reviewStartNextBtn").addEventListener("click", () => startReview());
-  $("#reviewOpenBtn").addEventListener("click", () => state.review.item && openItem(state.review.item.id));
-  $("#reviewOpenWithBtn").addEventListener("click", () => state.review.item && openItemWith(state.review.item.id));
-  $("#reviewFolderBtn").addEventListener("click", () => state.review.item && openFolder(state.review.item.id));
-  $("#reviewCreateNoteBtn").addEventListener("click", () => state.review.item && createNote({ itemId: state.review.item.id }));
-  $("#newNoteBtn").addEventListener("click", () => createNote());
-  $("#newLocalNoteBtn").addEventListener("click", () => createNote({ localMode: true }));
-  $("#openNotesFolderBtn").addEventListener("click", () => openFolderByPath(state.overview?.app?.notes_dir || state.overview?.app?.default_notes_dir));
-  $("#selectAllNotesBtn").addEventListener("click", () => {
+  $bind("scanAllBtn","click", scanAll);
+  $bind("startDueBtn","click", () => startReview());
+  $bind("reviewStartNextBtn","click", () => startReview());
+  $bind("reviewOpenBtn","click", () => state.review.item && openItem(state.review.item.id));
+  $bind("reviewOpenWithBtn","click", () => state.review.item && openItemWith(state.review.item.id));
+  $bind("reviewFolderBtn","click", () => state.review.item && openFolder(state.review.item.id));
+  $bind("reviewCreateNoteBtn","click", () => state.review.item && createNote({ itemId: state.review.item.id }));
+  $bind("newNoteBtn","click", () => createNote());
+  $bind("newLocalNoteBtn","click", () => createNote({ localMode: true }));
+  $bind("openNotesFolderBtn","click", () => openFolderByPath(state.overview?.app?.notes_dir || state.overview?.app?.default_notes_dir));
+  $bind("selectAllNotesBtn","click", () => {
     state.notes.forEach((note) => state.selectedNoteIds.add(note.id));
     renderNotesList();
   });
-  $("#clearNoteSelectionBtn").addEventListener("click", () => {
+  $bind("clearNoteSelectionBtn","click", () => {
     state.selectedNoteIds.clear();
     renderNotesList();
   });
-  $("#exportNotesBtn").addEventListener("click", exportSelectedNotes);
-  $("#deleteNotesBtn").addEventListener("click", () => deleteSelectedNotes());
-  $("#saveNoteBtn").addEventListener("click", saveNote);
-  $("#openNoteBtn").addEventListener("click", () => openNote(false));
-  $("#openNoteWithBtn").addEventListener("click", () => openNote(true));
-  $("#deleteActiveNoteBtn").addEventListener("click", () => state.activeNoteId && deleteSelectedNotes([state.activeNoteId]));
-  $("#saveSettingsBtn").addEventListener("click", saveSettings);
-  $("#backupBtn").addEventListener("click", backup);
-  $("#healthBtn").addEventListener("click", healthCheck);
-  $("#portableExportBtn").addEventListener("click", exportPortableJson);
-  $("#profileExportBtn").addEventListener("click", exportProfile);
-  $("#chooseExportDirBtn").addEventListener("click", chooseExportDir);
-  $("#openExportDirBtn").addEventListener("click", openExportDir);
-  $("#chooseProfileDirBtn").addEventListener("click", chooseProfileDir);
-  $("#moveProfileBtn").addEventListener("click", moveProfile);
-  $("#chooseImportProfileBtn").addEventListener("click", chooseImportProfilePackage);
-  $("#importProfileBtn").addEventListener("click", importProfile);
-  $("#openProfileBtn").addEventListener("click", openProfileFolder);
-  $("#refreshPluginsBtn").addEventListener("click", loadPlugins);
-  $("#importPluginZipBtn").addEventListener("click", () => importPlugin("zip"));
-  $("#importPluginFolderBtn").addEventListener("click", () => importPlugin("folder"));
-  $("#openPluginsFolderBtn").addEventListener("click", openPluginsFolder);
-  $("#exportBtn").addEventListener("click", exportCsv);
-  $("#batchTagBtn").addEventListener("click", batchTag);
-  $("#batchDeckBtn").addEventListener("click", batchAssignDeck);
-  $("#batchSuspendBtn").addEventListener("click", batchSuspend);
-  $("#batchActivateBtn").addEventListener("click", () => batchSetStatus("active", t("batch.activateShort")));
-  $("#batchDoneBtn").addEventListener("click", () => batchSetStatus("done", t("batch.doneShort")));
-  $("#batchDueTodayBtn").addEventListener("click", batchDueToday);
-  $("#batchDeleteBtn").addEventListener("click", batchDelete);
-  $("#shareBtn").addEventListener("click", exportSharePackage);
-  $("#languageSelect").addEventListener("change", async (event) => {
+  $bind("exportNotesBtn","click", exportSelectedNotes);
+  $bind("deleteNotesBtn","click", () => deleteSelectedNotes());
+  $bind("saveNoteBtn","click", saveNote);
+  $bind("openNoteBtn","click", () => openNote(false));
+  $bind("openNoteWithBtn","click", () => openNote(true));
+  $bind("deleteActiveNoteBtn","click", () => state.activeNoteId && deleteSelectedNotes([state.activeNoteId]));
+  $bind("saveSettingsBtn","click", saveSettings);
+  $bind("backupBtn","click", backup);
+  $bind("healthBtn","click", healthCheck);
+  $bind("portableExportBtn","click", exportPortableJson);
+  $bind("profileExportBtn","click", exportProfile);
+  $bind("chooseExportDirBtn","click", chooseExportDir);
+  $bind("openExportDirBtn","click", openExportDir);
+  $bind("chooseProfileDirBtn","click", chooseProfileDir);
+  $bind("moveProfileBtn","click", moveProfile);
+  $bind("chooseImportProfileBtn","click", chooseImportProfilePackage);
+  $bind("importProfileBtn","click", importProfile);
+  $bind("openProfileBtn","click", openProfileFolder);
+  $bind("refreshPluginsBtn","click", loadPlugins);
+  $bind("importPluginZipBtn","click", () => importPlugin("zip"));
+  $bind("importPluginFolderBtn","click", () => importPlugin("folder"));
+  $bind("openPluginsFolderBtn","click", openPluginsFolder);
+  $bind("exportBtn","click", exportCsv);
+  $bind("batchTagBtn","click", batchTag);
+  $bind("batchDeckBtn","click", batchAssignDeck);
+  $bind("batchSuspendBtn","click", batchSuspend);
+  $bind("batchActivateBtn","click", () => batchSetStatus("active", t("batch.activateShort")));
+  $bind("batchDoneBtn","click", () => batchSetStatus("done", t("batch.doneShort")));
+  $bind("batchDueTodayBtn","click", batchDueToday);
+  $bind("batchDeleteBtn","click", batchDelete);
+  $bind("shareBtn","click", exportSharePackage);
+  $bind("languageSelect","change", async (event) => {
     state.lang = event.target.value;
     localStorage.setItem("fileReviewerLanguage", state.lang);
     state.config.ui = state.config.ui || {};
@@ -3005,15 +3012,15 @@ function bindEvents() {
     renderDecks();
     renderItems();
   });
-  $("#onboardingCloseBtn").addEventListener("click", closeOnboarding);
-  $("#onboardingSkipBtn").addEventListener("click", closeOnboarding);
-  $("#onboardingPrevBtn").addEventListener("click", () => {
+  $bind("onboardingCloseBtn","click", closeOnboarding);
+  $bind("onboardingSkipBtn","click", closeOnboarding);
+  $bind("onboardingPrevBtn","click", () => {
     if (state.onboardingStep > 0) {
       state.onboardingStep -= 1;
       renderOnboardingStep();
     }
   });
-  $("#onboardingNextBtn").addEventListener("click", () => {
+  $bind("onboardingNextBtn","click", () => {
     if (state.onboardingStep >= ONBOARDING_STEPS.length - 1) {
       closeOnboarding();
     } else {
@@ -3021,26 +3028,25 @@ function bindEvents() {
       renderOnboardingStep();
     }
   });
-  const restartBtn = $("#restartOnboardingBtn");
-  if (restartBtn) restartBtn.addEventListener("click", startOnboarding);
+  $bind("restartOnboardingBtn","click", startOnboarding);
 
   $$(".rating").forEach((button) => {
     button.addEventListener("click", () => finishReview(button.dataset.rating));
   });
 
-  $("#globalSearch").addEventListener("input", (event) => {
+  $bind("globalSearch","input", (event) => {
     state.filters.search = event.target.value;
     if (state.view !== "library") setView("library");
     clearTimeout(state._searchTimer);
     state._searchTimer = setTimeout(loadItems, 220);
   });
 
-  $("#statusFilter").addEventListener("change", (event) => {
+  $bind("statusFilter","change", (event) => {
     state.filters.status = event.target.value;
     loadItems();
   });
 
-  $("#deckFilter").addEventListener("change", (event) => {
+  $bind("deckFilter","change", (event) => {
     state.filters.deckId = event.target.value;
     renderDecks();
     loadItems();
@@ -3068,14 +3074,14 @@ function bindEvents() {
     });
   });
 
-  $("#itemsBody").addEventListener("change", (event) => {
+  $bind("itemsBody","change", (event) => {
     if (!event.target.classList.contains("row-check")) return;
     const id = Number(event.target.dataset.id);
     if (event.target.checked) state.selectedIds.add(id);
     else state.selectedIds.delete(id);
   });
 
-  $("#selectAll").addEventListener("change", (event) => {
+  $bind("selectAll","change", (event) => {
     state.selectedIds.clear();
     if (event.target.checked) state.items.forEach((item) => state.selectedIds.add(item.id));
     renderItems();
