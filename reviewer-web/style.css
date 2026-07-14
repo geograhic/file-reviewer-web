@@ -1182,6 +1182,29 @@ select {
   line-height: 1.65;
 }
 
+/* ── Help page footer with project links ── */
+.help-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border, rgba(255,255,255,.08));
+  font-size: 13px;
+  color: var(--muted);
+}
+.help-footer-links a {
+  color: var(--accent, #3b82f6);
+  text-decoration: none;
+  transition: opacity .15s;
+}
+.help-footer-links a:hover { opacity: .75; }
+.help-footer-sep { margin: 0 6px; opacity: .35; }
+@media (max-width: 720px) {
+  .help-footer { flex-direction: column; align-items: flex-start; gap: 8px; font-size: 12px; }
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
