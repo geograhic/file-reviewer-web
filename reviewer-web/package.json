@@ -1,0 +1,12 @@
+{
+  "name": "smart-file-reviewer-web",
+  "version": "2.14.0",
+  "private": true,
+  "description": "纯前端 PWA 版智能文件复习系统（数据存于浏览器 IndexedDB，无服务器）",
+  "scripts": {
+    "test": "node tests/scheduler.test.cjs && node tests/api.test.cjs && node tests/boot.test.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}

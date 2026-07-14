@@ -1,0 +1,29 @@
+# ===== 构建产物 / 可执行文件 =====
+dist/
+__pycache__/
+*.pyc
+*.exe
+build_exe.bat
+
+# ===== 用户数据与隐私（绝不入库） =====
+*.sqlite
+*.sqlite3
+*.db
+LiFileReviewer2/
+*.log
+
+# ===== Node =====
+node_modules/
+.vite/
+
+# ===== 备份 / 同步 / 系统 =====
+source_backups/
+.DS_Store
+Thumbs.db
+
+# ===== 私有 agent 记忆（不公开） =====
+.workbuddy/
+
+# ===== 编辑器 =====
+.vscode/
+.idea/

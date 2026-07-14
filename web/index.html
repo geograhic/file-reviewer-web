@@ -1,0 +1,545 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智能文件复习系统 2.14.0</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">
+        <div class="brand-mark">R</div>
+        <div>
+          <h1 data-i18n="brand.title">文件复习</h1>
+          <p>2.0 WebUI</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard" title="总览" data-i18n-title="nav.dashboard">
+          <span class="ico">⌂</span><span data-i18n="nav.dashboard">总览</span>
+        </button>
+        <button class="nav-item" data-view="library" title="文件库" data-i18n-title="nav.library">
+          <span class="ico">▣</span><span data-i18n="nav.library">文件库</span>
+        </button>
+        <button class="nav-item" data-view="review" title="复习" data-i18n-title="nav.review">
+          <span class="ico">✓</span><span data-i18n="nav.review">复习</span>
+        </button>
+        <button class="nav-item" data-view="notes" title="笔记" data-i18n-title="nav.notes">
+          <span class="ico">✎</span><span data-i18n="nav.notes">笔记</span>
+        </button>
+        <button class="nav-item" data-view="settings" title="设置" data-i18n-title="nav.settings">
+          <span class="ico">⚙</span><span data-i18n="nav.settings">设置</span>
+        </button>
+        <button class="nav-item" data-view="help" title="帮助" data-i18n-title="nav.help">
+          <span class="ico">?</span><span data-i18n="nav.help">帮助</span>
+        </button>
+      </nav>
+      <div class="sidebar-foot">
+        <button id="chooseLibraryBtn" class="ghost-button full" title="选择本地文件库" data-i18n-title="actions.chooseLibrary">
+          <span class="ico">＋</span><span data-i18n="actions.addLibrary">添加文件库</span>
+        </button>
+        <button id="chooseFileBtn" class="ghost-button full" title="添加单个文件" data-i18n-title="actions.chooseFile">
+          <span class="ico">⊕</span><span data-i18n="actions.addFile">添加文件</span>
+        </button>
+        <button id="scanAllBtn" class="ghost-button full" title="扫描全部文件库" data-i18n-title="actions.scanAll">
+          <span class="ico">↻</span><span data-i18n="actions.rescan">重新扫描</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-title">
+          <h2 id="viewTitle">总览</h2>
+          <p id="viewSubtitle">今日复习队列与文件库状态</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="search">
+            <span>⌕</span>
+          <input id="globalSearch" type="search" placeholder="搜索文件、路径、标签" data-i18n-placeholder="search.placeholder">
+          </div>
+          <button id="startDueBtn" class="primary-button" title="开始下一项复习" data-i18n-title="actions.startDue">
+            <span class="ico">▶</span><span data-i18n="actions.startReview">开始复习</span>
+          </button>
+        </div>
+      </header>
+
+      <section id="dashboardView" class="view active">
+        <div class="stats-grid">
+          <div class="metric">
+            <span class="metric-label" data-i18n="metrics.dueToday">今日到期</span>
+            <strong id="metricDue">0</strong>
+            <small data-i18n="metrics.waiting">等待复习</small>
+          </div>
+          <div class="metric">
+            <span class="metric-label" data-i18n="metrics.total">全部资料</span>
+            <strong id="metricTotal">0</strong>
+            <small data-i18n="metrics.localIndex">本地索引</small>
+          </div>
+          <div class="metric">
+            <span class="metric-label" data-i18n="metrics.reviewedToday">今日已复习</span>
+            <strong id="metricReviewedToday">0</strong>
+            <small id="metricSecondsToday">00:00:00</small>
+          </div>
+          <div class="metric">
+            <span class="metric-label" data-i18n="metrics.streak">连续天数</span>
+            <strong id="metricStreak">0</strong>
+            <small data-i18n="metrics.studyTrace">学习轨迹</small>
+          </div>
+        </div>
+
+        <div id="dashboardLayout" class="dashboard-layout">
+          <section class="panel due-panel">
+            <div class="panel-head">
+              <h3 data-i18n="dashboard.queue">复习队列</h3>
+              <button class="text-button" data-view-link="review" data-i18n="actions.enter">进入</button>
+            </div>
+            <div id="dueList" class="due-list"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h3 data-i18n="dashboard.futureDue">未来到期</h3>
+              <button id="exportBtn" class="text-button" data-i18n="actions.exportCsv">导出 CSV</button>
+            </div>
+            <div id="futureBars" class="future-bars"></div>
+          </section>
+          <div id="dashboardPluginHost" class="plugin-host"></div>
+        </div>
+      </section>
+
+      <section id="libraryView" class="view">
+        <div id="libraryLayout" class="library-layout">
+          <section class="panel library-tree-panel">
+            <div class="panel-head">
+              <h3 data-i18n="library.localLibraries">本地文件库</h3>
+              <button id="chooseLibraryBtn2" class="icon-button" title="添加文件库" data-i18n-title="actions.addLibrary">＋</button>
+            </div>
+            <div class="library-actions-row">
+              <button id="chooseFileBtn2" class="secondary-button" data-i18n="actions.addFile">添加文件</button>
+              <button id="newDeckBtn" class="secondary-button" data-i18n="actions.newDeck">新建卡组</button>
+            </div>
+            <div class="deck-box">
+              <div class="panel-head compact-head">
+                <h4 data-i18n="decks.title">复习卡组</h4>
+                <button id="clearDeckFilterBtn" class="text-button" data-i18n="filters.all">全部</button>
+              </div>
+              <div id="deckList" class="deck-list"></div>
+            </div>
+            <div id="libraryList" class="library-list"></div>
+            <form id="manualLibraryForm" class="quick-path-form">
+              <label>
+                <span data-i18n="library.manualPath">手动路径</span>
+                <input id="manualLibraryPath" type="text" placeholder="C:\Users\...\Documents" data-i18n-placeholder="library.manualPathPlaceholder">
+              </label>
+              <div class="quick-path-actions">
+                <button id="manualLibraryBtn" type="submit" class="primary-button" data-i18n="actions.scanPath">扫描路径</button>
+              </div>
+              <div id="commonPathChips" class="chip-row"></div>
+            </form>
+            <div id="treeList" class="tree-list"></div>
+          </section>
+          <div id="libraryResizer" class="layout-resizer" title="拖动调整左侧宽度"></div>
+
+          <section class="panel items-panel">
+            <div class="table-toolbar">
+              <div class="segmented">
+                <button class="seg active" data-due="all" data-i18n="filters.all">全部</button>
+                <button class="seg" data-due="due" data-i18n="filters.due">到期</button>
+                <button class="seg" data-due="new" data-i18n="filters.new">新资料</button>
+                <button class="seg" data-due="future" data-i18n="filters.future">未到期</button>
+              </div>
+              <select id="statusFilter" title="状态筛选" data-i18n-title="filters.status">
+                <option value="active" data-i18n="status.active">活动</option>
+                <option value="suspended" data-i18n="status.suspended">暂停</option>
+                <option value="done" data-i18n="status.done">完成</option>
+                <option value="all" data-i18n="status.all">全部状态</option>
+              </select>
+              <select id="deckFilter" title="卡组筛选" data-i18n-title="decks.filter">
+                <option value="" data-i18n="decks.all">全部卡组</option>
+              </select>
+              <button id="batchTagBtn" class="secondary-button" title="批量标签" data-i18n-title="batch.tag">
+                <span class="ico">#</span><span data-i18n="batch.tagShort">标签</span>
+              </button>
+              <button id="batchDeckBtn" class="secondary-button" title="分配卡组" data-i18n-title="batch.deck">
+                <span class="ico">▤</span><span data-i18n="batch.deckShort">卡组</span>
+              </button>
+              <button id="batchSuspendBtn" class="secondary-button" title="暂停或恢复" data-i18n-title="batch.suspend">
+                <span class="ico">Ⅱ</span><span data-i18n="batch.suspendShort">暂停</span>
+              </button>
+              <button id="batchActivateBtn" class="secondary-button" title="恢复为活动" data-i18n-title="batch.activate">
+                <span class="ico">↺</span><span data-i18n="batch.activateShort">恢复</span>
+              </button>
+              <button id="batchDueTodayBtn" class="secondary-button" title="设为今天复习" data-i18n-title="batch.dueToday">
+                <span class="ico">!</span><span data-i18n="batch.todayShort">今天</span>
+              </button>
+              <button id="batchDoneBtn" class="secondary-button" title="标记完成" data-i18n-title="batch.done">
+                <span class="ico">✓</span><span data-i18n="batch.doneShort">完成</span>
+              </button>
+              <button id="batchDeleteBtn" class="secondary-button" title="删除索引记录" data-i18n-title="batch.delete">
+                <span class="ico">×</span><span data-i18n="batch.deleteShort">删除</span>
+              </button>
+              <button id="shareBtn" class="secondary-button" title="导出分享包" data-i18n-title="actions.share">
+                <span class="ico">⇪</span><span data-i18n="actions.share">分享</span>
+              </button>
+            </div>
+            <div class="table-wrap">
+              <table class="item-table">
+                <thead>
+                  <tr>
+                    <th class="check-cell"><input id="selectAll" type="checkbox"></th>
+                    <th data-sort="file_name" data-i18n="table.file">文件</th>
+                    <th data-i18n="table.deck">卡组</th>
+                    <th data-sort="due_at" data-i18n="table.due">到期</th>
+                    <th data-sort="retrievability" data-i18n="table.retention">记忆率</th>
+                    <th data-sort="review_count" data-i18n="table.count">次数</th>
+                    <th data-sort="total_read_seconds" data-i18n="table.time">时长</th>
+                    <th data-i18n="table.actions">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="itemsBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="reviewView" class="view">
+        <div class="review-layout">
+          <section class="panel review-workbench">
+            <div class="review-head">
+              <div>
+                <h3 id="reviewFileName" data-i18n="review.waiting">等待开始</h3>
+                <p id="reviewMeta" data-i18n="review.chooseOne">请选择一项资料开始复习</p>
+              </div>
+              <div class="timer" id="reviewTimer">00:00:00</div>
+            </div>
+            <div id="previewArea" class="preview-area">
+              <div class="empty-state">
+                <strong data-i18n="review.previewTitle">复习区</strong>
+                <span data-i18n="review.previewHint">打开资料后，这里会显示可预览文件或文件信息。</span>
+              </div>
+            </div>
+            <div class="review-actions">
+              <button id="reviewOpenBtn" class="secondary-button" title="用系统默认程序打开" data-i18n-title="actions.openDefault">
+                <span class="ico">↗</span><span data-i18n="actions.openFile">打开文件</span>
+              </button>
+              <button id="reviewOpenWithBtn" class="secondary-button" title="选择其他应用打开" data-i18n-title="actions.openWith">
+                <span class="ico">⋯</span><span data-i18n="actions.openWithShort">其他应用</span>
+              </button>
+              <button id="reviewFolderBtn" class="secondary-button" title="打开所在文件夹" data-i18n-title="actions.openFolder">
+                <span class="ico">⌖</span><span data-i18n="actions.folder">所在文件夹</span>
+              </button>
+              <button id="reviewCreateNoteBtn" class="secondary-button" title="为当前资料新建笔记" data-i18n-title="actions.createLinkedNote">
+                <span class="ico">✎</span><span data-i18n="actions.note">笔记</span>
+              </button>
+              <button id="reviewStartNextBtn" class="primary-button" title="开始下一项" data-i18n-title="actions.next">
+                <span class="ico">▶</span><span data-i18n="actions.next">下一项</span>
+              </button>
+            </div>
+          </section>
+
+          <aside class="panel rating-panel">
+            <h3 data-i18n="review.ratingTitle">完成评价</h3>
+            <div class="rating-grid">
+              <button class="rating again" data-rating="0">
+                <strong data-i18n="ratings.again">忘记</strong><span data-i18n="ratings.againHint">很快再看</span>
+              </button>
+              <button class="rating hard" data-rating="1">
+                <strong data-i18n="ratings.hard">困难</strong><span data-i18n="ratings.hardHint">缩短间隔</span>
+              </button>
+              <button class="rating good" data-rating="2">
+                <strong data-i18n="ratings.good">良好</strong><span data-i18n="ratings.goodHint">正常推进</span>
+              </button>
+              <button class="rating easy" data-rating="3">
+                <strong data-i18n="ratings.easy">简单</strong><span data-i18n="ratings.easyHint">拉长间隔</span>
+              </button>
+            </div>
+            <div class="history-block">
+              <h4 data-i18n="review.history">复习历史</h4>
+              <div id="historyList" class="history-list"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="notesView" class="view">
+        <div class="notes-layout">
+          <section class="panel notes-list-panel">
+            <div class="panel-head">
+              <h3 data-i18n="notes.title">笔记</h3>
+              <button id="newNoteBtn" class="icon-button" title="新建笔记" data-i18n-title="actions.newNote">＋</button>
+            </div>
+            <div class="note-tools">
+              <button id="newLocalNoteBtn" class="secondary-button" data-i18n="actions.newLocalNote">本地方式新建</button>
+              <button id="openNotesFolderBtn" class="secondary-button" data-i18n="actions.openNotesFolder">打开笔记目录</button>
+            </div>
+            <div class="note-tools batch-note-tools">
+              <button id="selectAllNotesBtn" class="secondary-button" data-i18n="notes.selectAll">全选</button>
+              <button id="clearNoteSelectionBtn" class="secondary-button" data-i18n="notes.clearSelection">取消选择</button>
+              <button id="exportNotesBtn" class="secondary-button" data-i18n="notes.exportSelected">导出所选</button>
+              <button id="deleteNotesBtn" class="secondary-button danger-button" data-i18n="notes.deleteSelected">删除所选</button>
+            </div>
+            <div id="noteSelectionSummary" class="note-selection-summary muted" data-i18n="notes.selectionEmpty">未选择笔记</div>
+            <div id="notesList" class="notes-list"></div>
+          </section>
+          <section class="panel note-editor-panel">
+            <div class="panel-head">
+              <input id="noteTitleInput" class="note-title-input" type="text" placeholder="笔记标题" data-i18n-placeholder="notes.titlePlaceholder">
+              <div class="panel-actions">
+                <button id="openNoteBtn" class="secondary-button" data-i18n="actions.openDefault">默认打开</button>
+                <button id="openNoteWithBtn" class="secondary-button" data-i18n="actions.openWithShort">其他应用</button>
+                <button id="deleteActiveNoteBtn" class="secondary-button danger-button" data-i18n="notes.deleteCurrent">删除当前</button>
+                <button id="saveNoteBtn" class="primary-button" data-i18n="actions.saveNote">保存笔记</button>
+              </div>
+            </div>
+            <textarea id="noteEditor" class="note-editor" spellcheck="false" placeholder="在这里记录复习笔记..." data-i18n-placeholder="notes.editorPlaceholder"></textarea>
+            <div id="notePath" class="note-path muted"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="settingsView" class="view">
+        <div class="settings-layout">
+          <section class="panel settings-panel">
+            <div class="panel-head">
+              <h3 data-i18n="settings.personalization">个性化</h3>
+              <button id="saveSettingsBtn" class="primary-button" data-i18n="actions.save">保存</button>
+            </div>
+            <div class="form-grid">
+              <label>
+                <span data-i18n="settings.algorithm">算法</span>
+                <select id="algorithmSelect">
+                  <option value="FSRS-Lite">FSRS-Lite</option>
+                  <option value="SM-2">SM-2</option>
+                  <option value="Fixed" data-i18n="settings.fixed">固定间隔</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="settings.retention">目标记忆率</span>
+                <input id="retentionInput" type="number" min="0.70" max="0.97" step="0.01">
+              </label>
+              <label>
+                <span data-i18n="settings.maxReviews">每日复习上限</span>
+                <input id="maxReviewsInput" type="number" min="1" max="1000" step="1">
+              </label>
+              <label>
+                <span data-i18n="settings.reminderTime">提醒时间</span>
+                <input id="reminderTimeInput" type="time">
+              </label>
+              <label class="toggle-line">
+                <span data-i18n="settings.reminderEnabled">提醒开关</span>
+                <input id="reminderEnabledInput" type="checkbox">
+              </label>
+              <label class="toggle-line">
+                <span data-i18n="settings.autoOpen">复习开始时外部打开文件</span>
+                <input id="autoOpenInput" type="checkbox">
+              </label>
+              <label>
+                <span data-i18n="settings.notesDir">笔记存储目录</span>
+                <input id="notesDirInput" type="text">
+              </label>
+              <label>
+                <span data-i18n="settings.exportDir">默认导出目录</span>
+                <input id="exportDirInput" type="text">
+              </label>
+              <label class="toggle-line">
+                <span data-i18n="settings.localNoteOpen">本地方式新建后打开所在文件夹</span>
+                <input id="localNoteOpenInput" type="checkbox">
+              </label>
+              <label>
+                <span data-i18n="settings.theme">主题</span>
+                <select id="themeSelect">
+                  <option value="light" data-i18n="theme.light">明亮</option>
+                  <option value="dark" data-i18n="theme.dark">深色</option>
+                  <option value="paper" data-i18n="theme.paper">纸面</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="settings.accent">强调色</span>
+                <input id="accentInput" type="color">
+              </label>
+              <label>
+                <span data-i18n="settings.language">语言</span>
+                <select id="languageSelect">
+                  <option value="zh-CN">简体中文</option>
+                  <option value="en-US">English</option>
+                </select>
+              </label>
+            </div>
+            <label class="wide-label">
+              <span data-i18n="settings.customCss">自定义 CSS</span>
+              <textarea id="customCssInput" rows="8" spellcheck="false"></textarea>
+            </label>
+            <div class="help-box">
+              <h4 data-i18n="help.title">帮助说明</h4>
+              <p data-i18n="help.body">完整教程已经放在左侧“帮助”页。这里保存的是个性化配置：复习算法、提醒、主题、笔记目录、导出目录和自定义 CSS。</p>
+            </div>
+          </section>
+
+          <section class="panel settings-panel">
+            <div class="panel-head">
+              <h3 data-i18n="settings.paths">配置位置</h3>
+              <div class="panel-actions">
+                <button id="healthBtn" class="secondary-button" data-i18n="actions.health">体检</button>
+                <button id="chooseExportDirBtn" class="secondary-button" data-i18n="actions.chooseExportDir">选择导出目录</button>
+                <button id="openExportDirBtn" class="secondary-button" data-i18n="actions.openExportFolder">打开导出目录</button>
+                <button id="portableExportBtn" class="secondary-button" data-i18n="actions.exportJson">导出 JSON</button>
+                <button id="profileExportBtn" class="secondary-button" data-i18n="actions.exportProfile">导出迁移包</button>
+                <button id="backupBtn" class="secondary-button" data-i18n="actions.backupDb">备份数据库</button>
+              </div>
+            </div>
+            <div class="profile-tools">
+              <label>
+                <span data-i18n="settings.profileDir">主数据目录</span>
+                <input id="profileDirInput" type="text">
+              </label>
+              <div class="profile-actions">
+                <button id="chooseProfileDirBtn" class="secondary-button" data-i18n="actions.chooseFolder">选择文件夹</button>
+                <button id="moveProfileBtn" class="primary-button" data-i18n="actions.moveProfile">迁移到此目录</button>
+              </div>
+              <label>
+                <span data-i18n="settings.importProfile">导入迁移包路径</span>
+                <input id="importProfilePathInput" type="text" placeholder="...\LiFileReviewer2_profile.zip">
+              </label>
+              <div class="profile-actions">
+                <button id="chooseImportProfileBtn" class="secondary-button" data-i18n="actions.choosePackage">选择迁移包</button>
+                <button id="importProfileBtn" class="secondary-button" data-i18n="actions.importProfile">导入迁移包</button>
+                <button id="openProfileBtn" class="secondary-button" data-i18n="actions.openProfileFolder">打开数据目录</button>
+              </div>
+            </div>
+            <dl class="path-list">
+              <dt data-i18n="paths.config">配置文件</dt>
+              <dd id="configPath"></dd>
+              <dt data-i18n="paths.database">数据库</dt>
+              <dd id="dbPath"></dd>
+              <dt data-i18n="paths.appDir">程序数据目录</dt>
+              <dd id="appDir"></dd>
+              <dt data-i18n="paths.log">日志</dt>
+              <dd id="logPath"></dd>
+              <dt data-i18n="paths.plugins">插件目录</dt>
+              <dd id="pluginsPath"></dd>
+              <dt data-i18n="paths.notes">笔记目录</dt>
+              <dd id="notesPath"></dd>
+              <dt data-i18n="paths.exports">导出目录</dt>
+              <dd id="exportsPath"></dd>
+              <dt data-i18n="paths.pointer">位置指针</dt>
+              <dd id="pointerPath"></dd>
+            </dl>
+            <div class="plugins-box">
+              <div class="panel-head compact-head">
+                <h4 data-i18n="plugins.title">插件管理</h4>
+                <div class="plugin-actions">
+                  <button id="importPluginZipBtn" class="text-button" data-i18n="plugins.importZip">导入插件包</button>
+                  <button id="importPluginFolderBtn" class="text-button" data-i18n="plugins.importFolder">导入文件夹</button>
+                  <button id="openPluginsFolderBtn" class="text-button" data-i18n="plugins.openFolder">打开目录</button>
+                  <button id="refreshPluginsBtn" class="text-button" data-i18n="actions.refresh">刷新</button>
+                </div>
+              </div>
+              <div id="pluginsList" class="plugin-list"></div>
+            </div>
+            <div id="settingsPluginHost" class="settings-plugin-host"></div>
+            <div class="health-box">
+              <h4 data-i18n="health.title">长期稳定性体检</h4>
+              <div id="healthSummary" class="muted" data-i18n="health.hint">点击体检，检查数据库、配置、资源文件和原始文件可见性。</div>
+              <div id="healthList" class="health-list"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="helpView" class="view">
+        <div class="help-layout">
+          <section class="panel help-panel">
+            <div class="panel-head">
+              <h3 data-i18n="help.startTitle">快速入门</h3>
+              <button class="secondary-button" data-view-link="library" data-i18n="actions.chooseLibraryNow">现在选择文件库</button>
+            </div>
+            <div class="help-grid">
+              <article class="help-card">
+                <h4 data-i18n="help.libraryTitle">文件库</h4>
+                <p data-i18n="help.libraryBody">点击“添加文件库”选择已有资料文件夹，或把路径粘贴到文件库页手动扫描。软件只建立索引，不移动原始文件。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.singleFileTitle">单独文件</h4>
+                <p data-i18n="help.singleFileBody">也可以直接添加某一个 PDF、文档、图片或视频，不必先把它放进文件夹库。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.decksTitle">卡组与标签</h4>
+                <p data-i18n="help.decksBody">文件库页可以像 Anki 一样新建复习卡组，把资料批量分配到分类里，并用标签继续细分。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.reviewTitle">复习</h4>
+                <p data-i18n="help.reviewBody">每天点击“开始复习”。读完资料后选择忘记、困难、良好或简单，系统会自动安排下一次复习。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.openTitle">打开方式</h4>
+                <p data-i18n="help.openBody">复习开始默认只在软件内预览，不会弹出系统默认软件。无法预览时再点“默认打开”或“其他应用”。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.notesTitle">笔记</h4>
+                <p data-i18n="help.notesBody">笔记是真实 Markdown 文件。可以在软件里新建、编辑、保存，也可以用“本地方式新建”让资源管理器接管。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.notesManageTitle">笔记管理</h4>
+                <p data-i18n="help.notesManageBody">在笔记列表勾选多篇笔记后，可以批量导出到默认导出目录，或确认后删除笔记文件和数据库记录。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.exportTitle">导出与迁移</h4>
+                <p data-i18n="help.exportBody">在设置页先选择默认导出目录，再导出 CSV、JSON、数据库备份或完整迁移包。迁移包包含配置、数据库备份、插件和笔记。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.shareTitle">分享包</h4>
+                <p data-i18n="help.shareBody">勾选资料或选择卡组后可导出分享包，默认分享索引、卡组、标签和关联笔记；需要时也可包含原始文件。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.pathsTitle">配置路径</h4>
+                <p data-i18n="help.pathsBody">设置页会显示配置文件、数据库、日志、插件、笔记、导出目录的完整路径。主数据目录可一键迁移。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.pluginsTitle">插件与未来升级</h4>
+                <p data-i18n="help.pluginsBody">插件目录已预留，默认只读取清单不执行插件代码。长期稳定依靠 SQLite、JSON、迁移包和体检流程。</p>
+              </article>
+              <article class="help-card">
+                <h4 data-i18n="help.safetyTitle">安全边界</h4>
+                <p data-i18n="help.safetyBody">删除文件库索引不会删除原始资料。删除笔记会删除你创建的笔记文件，软件会先弹出确认。</p>
+              </article>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="onboarding" class="onboarding hidden" role="dialog" aria-modal="true">
+    <div class="onboarding-card">
+      <button id="onboardingCloseBtn" class="icon-button onboarding-close" title="关闭" data-i18n-title="actions.close">×</button>
+      <div class="onboarding-step active" data-step="0">
+        <div class="step-badge">1</div>
+        <h2 data-i18n="onboarding.step1Title">欢迎使用智能文件复习系统</h2>
+        <p data-i18n="onboarding.step1Body">它不会移动你的资料，只会索引本地文件，并按记忆曲线提醒你复习。</p>
+      </div>
+      <div class="onboarding-step" data-step="1">
+        <div class="step-badge">2</div>
+        <h2 data-i18n="onboarding.step2Title">选择一个本地文件库</h2>
+        <p data-i18n="onboarding.step2Body">从你的 PDF、笔记、图片、视频文件夹开始。扫描后就能浏览、搜索和批量管理。</p>
+      </div>
+      <div class="onboarding-step" data-step="2">
+        <div class="step-badge">3</div>
+        <h2 data-i18n="onboarding.step3Title">每天从“开始复习”进入</h2>
+        <p data-i18n="onboarding.step3Body">阅读资料后选择忘记、困难、良好或简单，系统会自动安排下一次复习。</p>
+      </div>
+      <div class="onboarding-actions">
+        <button id="onboardingPrevBtn" class="secondary-button" data-i18n="actions.previous">上一步</button>
+        <button id="onboardingNextBtn" class="primary-button" data-i18n="actions.nextStep">下一步</button>
+        <button id="onboardingLibraryBtn" class="primary-button hidden" data-i18n="actions.chooseLibraryNow">现在选择文件库</button>
+      </div>
+    </div>
+  </div>
+  <style id="runtimeTheme"></style>
+  <script src="/app.js"></script>
+</body>
+</html>
+
