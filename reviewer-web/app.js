@@ -210,6 +210,16 @@ let I18N = {
     "onboarding.step2Body": "从你的 PDF、笔记、图片、视频文件夹开始。扫描后就能浏览、搜索和批量管理。",
     "onboarding.step3Title": "每天从“开始复习”进入",
     "onboarding.step3Body": "阅读资料后选择忘记、困难、良好或简单，系统会自动安排下一次复习。",
+    "onboarding.stepAddFileTitle": "也可以添加单个文件",
+    "onboarding.stepAddFileBody": "不必先建文件库，直接添加某一个 PDF、文档、图片或视频也行。",
+    "onboarding.stepSettingsTitle": "在设置里个性化",
+    "onboarding.stepSettingsBody": "调整复习算法、目标记忆率、每日上限、提醒时间、主题与强调色。",
+    "onboarding.stepHelpTitle": "随时可在帮助里重开本引导",
+    "onboarding.stepHelpBody": "点左侧“帮助”，随时重看快速入门，并重新开启新用户引导。",
+    "actions.skipTour": "跳过引导",
+    "actions.restartTour": "重新开始引导",
+    "actions.finish": "完成",
+    "help.restartTour": "开启新用户引导",
     "empty.noDueTitle": "今天没有到期资料",
     "empty.noDueBody": "可以浏览文件库添加新资料，或安心收工。",
     "empty.noFuture": "暂无未来到期数据。",
@@ -417,6 +427,16 @@ let I18N = {
     "onboarding.step2Body": "Start with a folder of PDFs, notes, images, or videos. After scanning, you can browse, search, and batch manage everything.",
     "onboarding.step3Title": "Use Start Review each day",
     "onboarding.step3Body": "After reading, rate the item as Again, Hard, Good, or Easy. The app schedules the next review automatically.",
+    "onboarding.stepAddFileTitle": "Or add a single file",
+    "onboarding.stepAddFileBody": "You don't need a library first. Add one PDF, document, image, or video directly.",
+    "onboarding.stepSettingsTitle": "Personalize in Settings",
+    "onboarding.stepSettingsBody": "Tune the review algorithm, target retention, daily limit, reminder time, theme, and accent color.",
+    "onboarding.stepHelpTitle": "Reopen this tour anytime from Help",
+    "onboarding.stepHelpBody": "Open “Help” on the left to reread the quick start and restart the new-user tour.",
+    "actions.skipTour": "Skip tour",
+    "actions.restartTour": "Restart tour",
+    "actions.finish": "Finish",
+    "help.restartTour": "Start new-user tour",
     "empty.noDueTitle": "Nothing due today",
     "empty.noDueBody": "Add items from your library, or enjoy a clear queue.",
     "empty.noFuture": "No future due data yet.",
@@ -906,6 +926,21 @@ for (const [key, values] of Object.entries(EXTRA_I18N)) {
   I18N["zh-CN"][key] = values["zh-CN"];
   I18N["en-US"][key] = values["en-US"];
 }
+
+// Guarantee onboarding action keys exist at runtime (the zh-CN reassignment
+// block above does not carry them; without this t() returns the raw key).
+Object.assign(I18N["zh-CN"], {
+  "actions.skipTour": "跳过引导",
+  "actions.restartTour": "重新开始引导",
+  "actions.finish": "完成",
+  "help.restartTour": "开启新用户引导",
+});
+Object.assign(I18N["en-US"], {
+  "actions.skipTour": "Skip tour",
+  "actions.restartTour": "Restart tour",
+  "actions.finish": "Finish",
+  "help.restartTour": "Start new-user tour",
+});
 
 function t(key, vars = {}) {
   const pack = I18N[state.lang] || I18N["zh-CN"];
@@ -2573,36 +2608,133 @@ function setupReminderLoop() {
   }, 60000);
 }
 
-function setOnboardingStep(step) {
-  state.onboardingStep = Math.max(0, Math.min(2, step));
-  $$(".onboarding-step").forEach((node) => {
-    node.classList.toggle("active", Number(node.dataset.step) === state.onboardingStep);
-  });
-  updateOnboardingButtons();
-}
+// ===== 新用户引导（聚光灯 tour） =====
+const ONBOARDING_STEPS = [
+  { titleKey: "onboarding.step1Title", bodyKey: "onboarding.step1Body", sel: null, view: null },
+  { titleKey: "onboarding.step2Title", bodyKey: "onboarding.step2Body", sel: "#chooseLibraryBtn", view: "library" },
+  { titleKey: "onboarding.stepAddFileTitle", bodyKey: "onboarding.stepAddFileBody", sel: "#chooseFileBtn", view: "library" },
+  { titleKey: "onboarding.step3Title", bodyKey: "onboarding.step3Body", sel: "#startDueBtn", view: "dashboard" },
+  { titleKey: "onboarding.stepSettingsTitle", bodyKey: "onboarding.stepSettingsBody", sel: '[data-view="settings"]', view: "settings" },
+  { titleKey: "onboarding.stepHelpTitle", bodyKey: "onboarding.stepHelpBody", sel: '[data-view="help"]', view: "help" },
+];
 
-function updateOnboardingButtons() {
-  const prev = $("#onboardingPrevBtn");
-  const next = $("#onboardingNextBtn");
-  const library = $("#onboardingLibraryBtn");
-  if (!prev || !next || !library) return;
-  prev.disabled = state.onboardingStep === 0;
-  next.classList.toggle("hidden", state.onboardingStep === 2);
-  library.classList.toggle("hidden", state.onboardingStep !== 2);
+function startOnboarding() {
+  state.onboardingStep = 0;
+  $("#onboarding").classList.remove("hidden");
+  renderOnboardingStep();
 }
 
 function showOnboardingIfNeeded() {
   const seen = localStorage.getItem("fileReviewerOnboardingDone") === "1";
   const hasLibrary = (state.libraries || []).length > 0;
-  if (!seen && !hasLibrary) {
-    setOnboardingStep(0);
-    $("#onboarding").classList.remove("hidden");
-  }
+  if (!seen && !hasLibrary) startOnboarding();
 }
 
 function closeOnboarding() {
   localStorage.setItem("fileReviewerOnboardingDone", "1");
-  $("#onboarding").classList.add("hidden");
+  const ob = $("#onboarding");
+  if (ob) ob.classList.add("hidden");
+  clearOnboardingHighlight();
+}
+
+function clearOnboardingHighlight() {
+  const spot = $("#onboardingSpot");
+  if (spot) spot.style.display = "none";
+  const overlay = $("#onboardingOverlay");
+  if (overlay) overlay.classList.remove("onboarding-overlay--dim");
+}
+
+function updateOnboardingButtons() {
+  const prev = $("#onboardingPrevBtn");
+  const next = $("#onboardingNextBtn");
+  if (!prev || !next) return;
+  const last = ONBOARDING_STEPS.length - 1;
+  prev.disabled = state.onboardingStep <= 0;
+  next.textContent = t(state.onboardingStep >= last ? "actions.finish" : "actions.nextStep");
+}
+
+function positionCardNear(card, r) {
+  const margin = 12;
+  const cw = card.offsetWidth || 420;
+  const ch = card.offsetHeight || 220;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let top = r.bottom + 12;
+  if (top + ch > vh - margin) top = r.top - ch - 12;
+  if (top < margin) top = margin;
+  let left = r.left;
+  if (left + cw > vw - margin) left = vw - cw - margin;
+  if (left < margin) left = margin;
+  card.style.top = `${top}px`;
+  card.style.left = `${left}px`;
+  card.style.right = "auto";
+  card.style.bottom = "auto";
+  card.style.transform = "none";
+}
+
+function centerCard(card) {
+  card.style.top = "50%";
+  card.style.left = "50%";
+  card.style.right = "auto";
+  card.style.bottom = "auto";
+  card.style.transform = "translate(-50%, -50%)";
+}
+
+function positionOnboardingSpot(sel) {
+  const overlay = $("#onboardingOverlay");
+  const spot = $("#onboardingSpot");
+  const card = $("#onboardingCard");
+  if (!spot || !overlay || !card) return;
+  if (!sel) {
+    overlay.classList.add("onboarding-overlay--dim");
+    spot.style.display = "none";
+    centerCard(card);
+    return;
+  }
+  const el = $(sel);
+  if (!el) {
+    overlay.classList.add("onboarding-overlay--dim");
+    spot.style.display = "none";
+    centerCard(card);
+    return;
+  }
+  overlay.classList.remove("onboarding-overlay--dim");
+  const r = el.getBoundingClientRect();
+  const pad = 6;
+  spot.style.display = "block";
+  spot.style.top = `${r.top - pad}px`;
+  spot.style.left = `${r.left - pad}px`;
+  spot.style.width = `${r.width + pad * 2}px`;
+  spot.style.height = `${r.height + pad * 2}px`;
+  spot.style.borderRadius = getComputedStyle(el).borderRadius || "10px";
+  positionCardNear(card, r);
+}
+
+function renderOnboardingStep() {
+  const steps = ONBOARDING_STEPS;
+  const idx = Math.max(0, Math.min(steps.length - 1, state.onboardingStep));
+  state.onboardingStep = idx;
+  const step = steps[idx];
+  const title = $("#onboardingTitle");
+  const body = $("#onboardingBody");
+  if (title) title.textContent = t(step.titleKey);
+  if (body) body.textContent = t(step.bodyKey);
+  const num = $("#onboardingStepNum");
+  const total = $("#onboardingStepTotal");
+  if (num) num.textContent = String(idx + 1);
+  if (total) total.textContent = String(steps.length);
+  const dots = $("#onboardingDots");
+  if (dots) {
+    dots.innerHTML = "";
+    steps.forEach((_, i) => {
+      const d = document.createElement("span");
+      d.className = "dot" + (i === idx ? " active" : "");
+      dots.appendChild(d);
+    });
+  }
+  if (step.view) setView(step.view);
+  positionOnboardingSpot(step.sel);
+  updateOnboardingButtons();
 }
 
 function setupLibraryResizer() {
@@ -2837,12 +2969,23 @@ function bindEvents() {
     renderItems();
   });
   $("#onboardingCloseBtn").addEventListener("click", closeOnboarding);
-  $("#onboardingPrevBtn").addEventListener("click", () => setOnboardingStep(state.onboardingStep - 1));
-  $("#onboardingNextBtn").addEventListener("click", () => setOnboardingStep(state.onboardingStep + 1));
-  $("#onboardingLibraryBtn").addEventListener("click", async () => {
-    closeOnboarding();
-    await chooseLibrary();
+  $("#onboardingSkipBtn").addEventListener("click", closeOnboarding);
+  $("#onboardingPrevBtn").addEventListener("click", () => {
+    if (state.onboardingStep > 0) {
+      state.onboardingStep -= 1;
+      renderOnboardingStep();
+    }
   });
+  $("#onboardingNextBtn").addEventListener("click", () => {
+    if (state.onboardingStep >= ONBOARDING_STEPS.length - 1) {
+      closeOnboarding();
+    } else {
+      state.onboardingStep += 1;
+      renderOnboardingStep();
+    }
+  });
+  const restartBtn = $("#restartOnboardingBtn");
+  if (restartBtn) restartBtn.addEventListener("click", startOnboarding);
 
   $$(".rating").forEach((button) => {
     button.addEventListener("click", () => finishReview(button.dataset.rating));

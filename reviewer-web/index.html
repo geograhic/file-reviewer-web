@@ -456,6 +456,9 @@
               <h3 data-i18n="help.startTitle">快速入门</h3>
               <button class="secondary-button" data-view-link="library" data-i18n="actions.chooseLibraryNow">现在选择文件库</button>
             </div>
+            <div class="help-restart-row">
+              <button id="restartOnboardingBtn" class="secondary-button" data-i18n="help.restartTour">开启新用户引导</button>
+            </div>
             <div class="help-grid">
               <article class="help-card">
                 <h4 data-i18n="help.libraryTitle">文件库</h4>
@@ -513,28 +516,20 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <div id="onboarding" class="onboarding hidden" role="dialog" aria-modal="true">
-    <div class="onboarding-card">
+  <div id="onboarding" class="onboarding hidden" role="dialog" aria-modal="true" aria-label="新用户引导">
+    <div id="onboardingOverlay" class="onboarding-overlay"></div>
+    <div id="onboardingSpot" class="onboarding-spot"></div>
+    <div id="onboardingCard" class="onboarding-card">
       <button id="onboardingCloseBtn" class="icon-button onboarding-close" title="关闭" data-i18n-title="actions.close">×</button>
-      <div class="onboarding-step active" data-step="0">
-        <div class="step-badge">1</div>
-        <h2 data-i18n="onboarding.step1Title">欢迎使用智能文件复习系统</h2>
-        <p data-i18n="onboarding.step1Body">它不会移动你的资料，只会索引本地文件，并按记忆曲线提醒你复习。</p>
-      </div>
-      <div class="onboarding-step" data-step="1">
-        <div class="step-badge">2</div>
-        <h2 data-i18n="onboarding.step2Title">选择一个本地文件库</h2>
-        <p data-i18n="onboarding.step2Body">从你的 PDF、笔记、图片、视频文件夹开始。扫描后就能浏览、搜索和批量管理。</p>
-      </div>
-      <div class="onboarding-step" data-step="2">
-        <div class="step-badge">3</div>
-        <h2 data-i18n="onboarding.step3Title">每天从“开始复习”进入</h2>
-        <p data-i18n="onboarding.step3Body">阅读资料后选择忘记、困难、良好或简单，系统会自动安排下一次复习。</p>
-      </div>
+      <div class="onboarding-progress"><span id="onboardingStepNum">1</span><span class="onboarding-progress-sep">/</span><span id="onboardingStepTotal">6</span></div>
+      <h2 id="onboardingTitle"></h2>
+      <p id="onboardingBody"></p>
+      <div id="onboardingDots" class="onboarding-dots"></div>
       <div class="onboarding-actions">
+        <button id="onboardingSkipBtn" class="text-button" data-i18n="actions.skipTour">跳过引导</button>
+        <span class="onboarding-spacer"></span>
         <button id="onboardingPrevBtn" class="secondary-button" data-i18n="actions.previous">上一步</button>
         <button id="onboardingNextBtn" class="primary-button" data-i18n="actions.nextStep">下一步</button>
-        <button id="onboardingLibraryBtn" class="primary-button hidden" data-i18n="actions.chooseLibraryNow">现在选择文件库</button>
       </div>
     </div>
   </div>
